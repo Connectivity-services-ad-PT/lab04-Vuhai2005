@@ -108,17 +108,18 @@ def build_problem(
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     if isinstance(exc.detail, dict):
-        problem = exc.detail
+        problem = exc.detail.copy()
     else:
         problem = build_problem(
             status_code=exc.status_code,
-            title=status.HTTP_STATUS_CODES.get(exc.status_code, "HTTP Error"),
+            title="HTTP Error",
             detail=str(exc.detail),
             instance=str(request.url.path),
         )
 
+    # Đã sửa đổi: Tránh dùng danh mục lỗi thời từ Starlette gây lỗi 500 Internal Server Error
     problem.setdefault("status", exc.status_code)
-    problem.setdefault("title", status.HTTP_STATUS_CODES.get(exc.status_code, "HTTP Error"))
+    problem.setdefault("title", "Unauthorized" if exc.status_code == 401 else "HTTP Error")
     problem.setdefault("type", "about:blank")
     problem.setdefault("detail", "Request failed")
     problem.setdefault("instance", str(request.url.path))
